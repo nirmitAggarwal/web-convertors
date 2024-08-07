@@ -1,0 +1,2 @@
+
+Replace `'YOUR_API_KEY'` with your actual API key from the PDF.co API. This example uses the PDF.co API to handle the conversion, but you can use any similar service that provides an API for converting PDF files to Word documents.
