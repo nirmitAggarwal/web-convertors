@@ -1,52 +1,88 @@
-document
-  .getElementById("upload-form")
-  .addEventListener("submit", function (event) {
-    event.preventDefault();
+document.addEventListener("DOMContentLoaded", () => {
+  const dropZone = document.getElementById("drop-zone");
+  const fileInput = document.getElementById("fileInput");
+  const convertBtn = document.getElementById("convertBtn");
+  const output = document.getElementById("output");
 
-    const fileInput = document.getElementById("word-file");
-    const file = fileInput.files[0];
+  dropZone.addEventListener("click", () => {
+    fileInput.click();
+  });
 
-    if (
-      file &&
-      (file.type === "application/msword" ||
+  fileInput.addEventListener("change", handleFileSelect);
+
+  dropZone.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    dropZone.classList.add("dragover");
+  });
+
+  dropZone.addEventListener("dragleave", () => {
+    dropZone.classList.remove("dragover");
+  });
+
+  dropZone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dropZone.classList.remove("dragover");
+    const files = e.dataTransfer.files;
+    handleFiles(files);
+  });
+
+  function handleFileSelect(e) {
+    const files = e.target.files;
+    handleFiles(files);
+  }
+
+  function handleFiles(files) {
+    if (files.length > 0) {
+      const file = files[0];
+      if (
+        file.type === "application/msword" ||
         file.type ===
-          "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-    ) {
-      convertWordToPdf(file);
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      ) {
+        output.textContent = `Selected file: ${file.name}`;
+        convertBtn.disabled = false;
+      } else {
+        output.textContent = "Please upload a valid Word document.";
+        convertBtn.disabled = true;
+      }
+    }
+  }
+
+  convertBtn.addEventListener("click", () => {
+    const file = fileInput.files[0];
+    if (file) {
+      output.textContent = "Converting...";
+      convertWordToPDF(file);
     } else {
-      displayMessage("Please select a valid Word file.");
+      output.textContent = "No file selected.";
     }
   });
 
-function displayMessage(message) {
-  const messageDiv = document.getElementById("message");
-  messageDiv.textContent = message;
-}
+  function convertWordToPDF(file) {
+    const formData = new FormData();
+    formData.append("file", file);
 
-function convertWordToPdf(file) {
-  const formData = new FormData();
-  formData.append("file", file);
-
-  fetch("https://api.pdf.co/v1/file/convert/to/pdf", {
-    method: "POST",
-    headers: {
-      "x-api-key": "YOUR_API_KEY",
-    },
-    body: formData,
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      if (data.error) {
-        displayMessage("Error converting Word to PDF: " + data.message);
-      } else {
-        const link = document.createElement("a");
-        link.href = data.url;
-        link.download = "converted.pdf";
-        link.click();
-        displayMessage("File converted successfully.");
+    fetch(
+      "https://api.convertapi.com/convert/docx/to/pdf?Secret=YOUR_API_SECRET",
+      {
+        method: "POST",
+        body: formData,
       }
-    })
-    .catch((error) => {
-      displayMessage("Error converting Word to PDF: " + error.message);
-    });
-}
+    )
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.Files && data.Files.length > 0) {
+          const pdfUrl = data.Files[0].Url;
+          output.innerHTML = `<a href="${pdfUrl}" target="_blank">Download PDF</a>`;
+        } else {
+          output.textContent = "Conversion failed. Please try again.";
+        }
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        output.textContent = "Conversion failed. Please try again.";
+      });
+  }
+
+  ScrollReveal().reveal(".container", { delay: 200 });
+});
